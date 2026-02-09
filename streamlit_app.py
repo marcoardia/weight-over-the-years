@@ -762,4 +762,3 @@ with st.expander("🔍 See processed daily data (interpolated)", expanded=False)
 with st.expander("📄 Raw vs cleaned points (before interpolation)", expanded=False):
     compare_pts = points_raw.merge(points_clean, on="date", how="outer", suffixes=("_raw", "_clean")).sort_values("date")
     st.dataframe(compare_pts, use_container_width=True)
-``
