@@ -413,7 +413,15 @@ with st.expander("🧪 Outlier cleaning summary", expanded=(outlier_method != "N
     )
     mini = alt.Chart(preview_long).mark_line().encode(
         x=alt.X("date:T", title="Date"),
-        y=alt.Y("weight:Q", title=f"Weight ({units})"),
+        
+    y=alt.Y(
+        "weight:Q",
+        title=f"Weight ({units})",
+        scale=alt.Scale(
+        domain=[75, float(plot_data["weight"].max())]  # start at ~75
+    )
+),
+
         color=alt.Color("series:N", title="Series", scale=alt.Scale(domain=["weight_raw","weight_clean"], range=["#d62728","#1f77b4"])),
         opacity=alt.condition(alt.datum.series == "weight_clean", alt.value(1.0), alt.value(0.5)),
         tooltip=[alt.Tooltip("year:N"), alt.Tooltip("date:T"), alt.Tooltip("weight:Q", format=".2f")]
@@ -445,7 +453,15 @@ base = alt.Chart(plot_data).transform_calculate(
 line = base.mark_line(size=2).encode(
     x=alt.X("ref_date:T",
             axis=alt.Axis(title="Calendar date (Jan 1 → Dec 31)", format="%b", labelAngle=0, tickCount=12)),
-    y=alt.Y("weight:Q", title=f"Weight ({units})"),
+   
+    y=alt.Y(
+        "weight:Q",
+        title=f"Weight ({units})",
+        scale=alt.Scale(
+        domain=[75, float(plot_data["weight"].max())]  # start at ~75
+    )
+),
+
     color=alt.Color("year:N", title="Year", scale=alt.Scale(scheme=color_scheme)),
     opacity=alt.condition(
         alt.datum.year == (None if highlight_year == "(none)" else highlight_year),
