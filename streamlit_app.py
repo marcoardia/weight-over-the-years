@@ -413,15 +413,7 @@ with st.expander("🧪 Outlier cleaning summary", expanded=(outlier_method != "N
     )
     mini = alt.Chart(preview_long).mark_line().encode(
         x=alt.X("date:T", title="Date"),
-        
-    y=alt.Y(
-        "weight:Q",
-        title=f"Weight ({units})",
-        scale=alt.Scale(
-        domain=[75, float(plot_data["weight"].max())]  # start at ~75
-    )
-),
-
+        y=alt.Y("weight:Q", title=f"Weight ({units})"),
         color=alt.Color("series:N", title="Series", scale=alt.Scale(domain=["weight_raw","weight_clean"], range=["#d62728","#1f77b4"])),
         opacity=alt.condition(alt.datum.series == "weight_clean", alt.value(1.0), alt.value(0.5)),
         tooltip=[alt.Tooltip("year:N"), alt.Tooltip("date:T"), alt.Tooltip("weight:Q", format=".2f")]
