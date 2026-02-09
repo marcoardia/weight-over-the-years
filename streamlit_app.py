@@ -123,27 +123,43 @@ def _dedupe_last_per_day(df: pd.DataFrame, date_col: str):
     )
 
 def _daily_interpolated(df: pd.DataFrame, date_col: str, weight_col: str, include_feb29: bool):
+    """
+    Returns a daily, within-year, linearly interpolated DataFrame with:
+      - date (actual year)
+      - year
+      - weight (interpolated)
+      - ref_date (same month/day on a reference non-leap year)
+      - month_day label (e.g., 'Jan 03')
+    """
     if df.empty:
         return df
 
     df = df[[date_col, weight_col]].copy()
-    df = df.sort_values(date_col)
-    df = df.dropna(subset=[weight_col])
+
+    # Ensure datetimes and float weights
+    df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
+    df[weight_col] = pd.to_numeric(df[weight_col], errors="coerce")
+    df = df.dropna(subset=[date_col, weight_col]).sort_values(date_col)
 
     out = []
     years = np.sort(df[date_col].dt.year.unique())
+
     for y in years:
         g = df[df[date_col].dt.year == y].copy()
         if g.empty:
             continue
+
         g = g.set_index(date_col)
         g = g[~g.index.duplicated(keep="last")]
+
         start = pd.Timestamp(year=y, month=1, day=1)
         end = pd.Timestamp(year=y, month=12, day=31)
         idx = pd.date_range(start=start, end=end, freq="D")
 
         gg = g.reindex(idx)
         gg[weight_col] = gg[weight_col].astype(float)
+
+        # Interpolate within the year; allow both directions to avoid NaNs at ends
         gg[weight_col] = gg[weight_col].interpolate(method="time", limit_direction="both")
 
         gg["date"] = gg.index
@@ -154,15 +170,19 @@ def _daily_interpolated(df: pd.DataFrame, date_col: str, weight_col: str, includ
         if not include_feb29:
             gg = gg[~((gg["month"] == 2) & (gg["day"] == 29))]
 
-        # Map to a non-leap reference year (2001). If Feb 29 included, map to 2000 for display.
+        # Build ref_date aligned to a non-leap reference (2001).
+        # If Feb 29 is included, map that one day to 2000-02-29 just for display.
         ref_dates = []
         for m, d in zip(gg["month"], gg["day"]):
             try:
                 ref_dates.append(pd.Timestamp(year=2001, month=m, day=d))
             except ValueError:
+                # Only triggered by Feb 29; use a leap reference year
                 ref_dates.append(pd.Timestamp(year=2000, month=m, day=d))
         gg["ref_date"] = pd.to_datetime(ref_dates)
-        gg["month_day"] = gg["date"].strftime("%b %d")
+
+        # ✅ Use .dt for datetime Series
+        gg["month_day"] = pd.to_datetime(gg["date"]).dt.strftime("%b %d")
 
         out.append(gg.reset_index(drop=True))
 
